@@ -1,5 +1,4 @@
 import os
-from sqlite3 import Connection
 import requests
 import pandas as pd
 import fastparquet
@@ -15,6 +14,7 @@ from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi.responses import FileResponse
 from logging.config import dictConfig
 from pydantic import ValidationError
+from sqlite3 import Connection
 
 app = FastAPI()
 
@@ -27,12 +27,14 @@ def __getDbConnection():
   settings = __getSettings()
   return queries.connectToVinDatabase(settings.vinCacheFilePath)
 
-# Set up logging
-loggerName, logConfig = __name__, LogConfig()
-logConfig.addLogger(loggerName, "INFO")
+@lru_cache
+def __getLogger():
+  # Set up logging
+  loggerName, logConfig = __name__, LogConfig()
+  logConfig.addLogger(loggerName, "INFO")
 
-dictConfig(logConfig.dict())
-logger = logging.getLogger(loggerName)
+  dictConfig(logConfig.dict())
+  return logging.getLogger(loggerName)
 
 def __validateVinFormat(vin: str):
   vin = vin.strip().upper()
@@ -43,18 +45,22 @@ def __validateVinFormat(vin: str):
 
 @app.on_event("startup")
 def startup():
+  logger = __getLogger()
   logger.info("Connecting to vin cache.")
   _ = __getDbConnection()
 
 @app.on_event("shutdown")
 def shutdown():
+  logger = __getLogger()
   logger.info("Shutting down service.")
   logger.info("Closing database connection.")
   dbConnection = __getDbConnection()
   dbConnection.close()
 
 @app.get("/lookup/{vin}", status_code=status.HTTP_200_OK)
-def lookup(vin: str, dbConnection: Connection = Depends(__getDbConnection)):
+def lookup(vin: str,
+           logger: logging.Logger = Depends(__getLogger),
+           dbConnection: Connection = Depends(__getDbConnection)):
   """ Lookup the given vin number in the cache. If the vin is not in the
       cache, then try to get it from [Vehicle API](https://vpic.nhtsa.dot.gov/api/)
       and insert the vin in the cache if found.
@@ -91,7 +97,9 @@ def lookup(vin: str, dbConnection: Connection = Depends(__getDbConnection)):
     raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Something happened on our end.") from ex
 
 @app.delete("/remove/{vin}", status_code=status.HTTP_200_OK)
-def remove(vin: str, dbConnection: Connection = Depends(__getDbConnection)):
+def remove(vin: str,
+           logger: logging.Logger = Depends(__getLogger),
+           dbConnection: Connection = Depends(__getDbConnection)):
   """ Remove the vin from cache. This API will return a status of 200, whether
       the vin was successfully removed or not from the cache. Client can use the 
       field `cacheDeleteSuccess` to check the actual success status of the API.
@@ -105,7 +113,8 @@ def remove(vin: str, dbConnection: Connection = Depends(__getDbConnection)):
     raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Something happened on our end.") from ex
 
 @app.get("/export", status_code=status.HTTP_200_OK)
-def export(dbConnection: Connection = Depends(__getDbConnection)):
+def export(logger: logging.Logger = Depends(__getLogger), 
+           dbConnection: Connection = Depends(__getDbConnection)):
   """ Export the cache to a parq file (Parquet format). If the cache is empty,
       then export an empty parq file.
   """
