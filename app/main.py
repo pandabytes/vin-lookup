@@ -1,8 +1,8 @@
 import os
 import requests
-import pandas as pd
 import fastparquet
 import logging
+from .apis.vpic import getVin, VpicApiError
 from .config import Settings
 from .db import entities, queries
 from .logConfig import LogConfig
@@ -75,25 +75,20 @@ def lookup(vin: str,
     logger.info("Got VIN %s from cache.", vin)
     return LookupResponse(**cacheVin.dict(), cachedResult=True)
   
-  response = requests.get(f"https://vpic.nhtsa.dot.gov/api/vehicles/DecodeVinValues/{vin}?format=json")
+  entityVin: entities.Vin | None
   try:
-    response.raise_for_status()
-    jsonObj = response.json()["Results"][0]
+    entityVin = getVin(vin)
+  except VpicApiError as ex:
+    logger.exception("Call to Vehicle API failed when looking up VIN %s. Error status code from Vehicle API is %d", vin, ex.errorStatusCode)
+    raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=f"Call to Vehicle API returned an error. Error: {ex}") from ex
+  
+  if entityVin is None:
+    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Cannot find VIN {vin}.")
 
-    entityVin = entities.Vin(vin=vin, 
-                             make=jsonObj["Make"],
-                             model=jsonObj["Model"],
-                             modelYear=jsonObj["ModelYear"],
-                             bodyClass=jsonObj["BodyClass"])
-
+  try:
     logger.info("Inserting VIN %s to cache.", vin)
     queries.insertVin(dbConnection, entityVin)
-
     return LookupResponse(**entityVin.dict(), cachedResult=False)
-  except requests.HTTPError as ex:
-    raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=f"Call to Vehicle API returned an error. Error: {ex}") from ex
-  except ValidationError as ex:
-    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Cannot find VIN {vin}.") from ex
   except Exception as ex:
     logger.exception("Encountered unexpected error in trying to lookup VIN %s.", vin)
     raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Something happened on our end.") from ex
