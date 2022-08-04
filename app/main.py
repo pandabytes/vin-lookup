@@ -9,6 +9,7 @@ from .logConfig import LogConfig
 from .schemas.lookup import LookupResponse
 from .schemas.remove import RemoveResponse
 from .utils.vin import isVinInCorrectFormat
+from .utils.conversions import convertToDataFrame
 from functools import lru_cache
 from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi.responses import FileResponse
@@ -45,8 +46,9 @@ def __validateVinFormat(vin: str):
 
 @app.on_event("startup")
 def startup():
+  settings = __getSettings()
   logger = __getLogger()
-  logger.info("Connecting to vin cache.")
+  logger.info(f"Connecting to vin cache at \"{settings.vinCacheFilePath}\".")
   _ = __getDbConnection()
 
 @app.on_event("shutdown")
@@ -124,10 +126,10 @@ def export(logger: logging.Logger = Depends(__getLogger),
     pass
 
   try:
-    vins = queries.getAllVinsRaw(dbConnection)
+    vins = queries.getAllVins(dbConnection)
     if len(vins) > 0:
       logger.info(f"Writing {len(vins)} vin(s) to file \"{parquetFilePath}\".")
-      dataFrame = pd.DataFrame(vins, columns=["vin", "make", "model", "modelYear", "bodyClass"])
+      dataFrame = convertToDataFrame(vins)
       fastparquet.write(parquetFilePath, dataFrame)
   except Exception as ex:
     logger.exception("Encountered unexpected error in trying to export parq file. Error: %s", ex)

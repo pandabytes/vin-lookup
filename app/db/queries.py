@@ -47,16 +47,12 @@ def getVin(connection: sqlite3.Connection, vin: str) -> Vin | None:
       return None
 
     return __mapRowToVin(firstRow)
-  
-def getAllVinsRaw(connection: sqlite3.Connection) -> list[tuple]:
-  """ Only use this if the size of the data is small.
-      This returns the raw data from sqlite, in the form
-      of tuple (a, b, c, d, etc...) where each index
-      represents the corresponding column in the Vin table.
-  """
+
+def getAllVins(connection: sqlite3.Connection) -> list[Vin]:
+  """ Get all vins in the cache. """
   with closing(connection.cursor()) as cursor:
     rows = cursor.execute("SELECT * FROM Vin")
-    return [row for row in rows]
+    return [__mapRowToVin(row) for row in rows]
 
 def removeVin(connection: sqlite3.Connection, vin: str):
   """ Remove the `vin` from the Vin table. It returns `True` if the vin was removed. `False` otherwise. """
