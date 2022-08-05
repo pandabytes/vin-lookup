@@ -3,13 +3,13 @@ import fastparquet
 import logging
 from .apis.vpic import getVin, VpicApiError
 from .apis.carImagery import getVehiclePhotoUrl, CarImageryApiError
-from .config import Settings
+from .config import Settings, LogConfig
 from .db import entities, queries
-from .logConfig import LogConfig
 from .schemas.lookup import LookupResponse
 from .schemas.remove import RemoveResponse
 from .utils.vin import isVinInCorrectFormat
 from .utils.conversions import convertToDataFrame
+from .utils.file import createSubdirs
 from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi.responses import FileResponse
 from functools import lru_cache
@@ -21,7 +21,13 @@ app = FastAPI()
 
 @lru_cache()
 def __getSettings():
-  return Settings()
+  settings = Settings()
+  
+  # Create subdirectories for files
+  createSubdirs(settings.vinCacheFilePath, True)
+  createSubdirs(settings.parquetFilePath, True)
+
+  return settings
 
 @lru_cache()
 def __getDbConnection():
@@ -68,8 +74,7 @@ def __getVehiclePhotoUrl(make: str, model: str, modelYear: str, logger: logging.
 
 @app.on_event("startup")
 def startup():
-  settings = __getSettings()
-  logger = __getLogger()
+  settings, logger = __getSettings(), __getLogger()
   logger.info(f"Connecting to vin cache at \"{settings.vinCacheFilePath}\".")
   _ = __getDbConnection()
 
@@ -130,13 +135,14 @@ def remove(vin: str,
     raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Something happened on our end.") from ex
 
 @app.get("/export", status_code=status.HTTP_200_OK)
-def export(logger: logging.Logger = Depends(__getLogger), 
-           dbConnection: Connection = Depends(__getDbConnection)):
+def export(logger: logging.Logger = Depends(__getLogger),
+           dbConnection: Connection = Depends(__getDbConnection),
+           settings: Settings = Depends(__getSettings)):
   """ Export the cache to a parq file (Parquet format). If the cache is empty,
       then export an empty parq file.
   """
   # Always create an empty parquet file
-  parquetFilePath = "vins.parq"
+  parquetFilePath = settings.parquetFilePath
   with open(parquetFilePath, "w") as _: 
     pass
 
