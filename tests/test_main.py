@@ -1,12 +1,13 @@
+import app.main as main
 import fastparquet
 import os
 import pytest
-from fastapi.testclient import TestClient
-from fastapi import status
-import app.main as main
 from app.schemas.remove import RemoveResponse
 from app.schemas.lookup import LookupResponse
 from app.utils.conversions import DATAFRAME_COLUMNS
+from fastapi.testclient import TestClient
+from fastapi import status
+from .data import REAL_VINS, FAKE_VALID_FORMAT_VIN
 
 client = TestClient(main.app)
 
@@ -34,12 +35,11 @@ class TestLookupApi:
     response = client.get(f"/lookup/{vin}")
     assert response.status_code == status.HTTP_400_BAD_REQUEST
 
-  @pytest.mark.parametrize("vin", ["xxxxxxxxxxxxxxxxx", "01234567891234567"])
-  def test_lookup_vin_not_found(self, vin: str):
-    response = client.get(f"/lookup/{vin}")
+  def test_lookup_vin_not_found(self):
+    response = client.get(f"/lookup/{FAKE_VALID_FORMAT_VIN}")
     assert response.status_code == status.HTTP_404_NOT_FOUND
     
-  @pytest.mark.parametrize("vin", ["1XPWD40X1ED215307 ", "1XKWDB0X57J211825"])
+  @pytest.mark.parametrize("vin", REAL_VINS)
   def test_lookup_vin_found_but_not_in_cache(self, vin: str):
     response = client.get(f"/lookup/{vin}")
     assert response.status_code == status.HTTP_200_OK
@@ -50,7 +50,7 @@ class TestLookupApi:
     removeInsertedVins([vin])
 
   def test_lookup_vin_found_in_cache(self):
-    vin = "1XPWD40X1ED215307"
+    vin = REAL_VINS[0]
     response = client.get(f"/lookup/{vin}")
     assert response.status_code == status.HTTP_200_OK
 
@@ -73,15 +73,14 @@ class TestRemoveApi:
     assert response.status_code == status.HTTP_400_BAD_REQUEST
 
   def test_remove_vin_not_in_cache(self):
-    vin = "1XPWD40X1ED215307"
-    response = client.delete(f"/remove/{vin}")
+    response = client.delete(f"/remove/{FAKE_VALID_FORMAT_VIN}")
     assert response.status_code == status.HTTP_200_OK
 
     removeResponse = RemoveResponse(**response.json())
     assert removeResponse.cacheDeleteSuccess == False
 
   def test_remove_vin_in_cache(self):
-    vin = "1XPWD40X1ED215307"
+    vin = REAL_VINS[0]
 
     response = client.get(f"/lookup/{vin}")
     assert response.status_code == status.HTTP_200_OK
@@ -95,7 +94,7 @@ class TestRemoveApi:
 class TestExportApi:
   def test_export_with_vins_in_cache(self):
     # Add some vins to the cache so that we can export non-empty cache
-    vins = ["1XPWD40X1ED215307", "1XKWDB0X57J211825", "1XP5DB9X7YN526158", "4V4NC9EJXEN171694"]
+    vins = REAL_VINS
     expectedVins = insertVins(vins)
 
     # Export the cache
