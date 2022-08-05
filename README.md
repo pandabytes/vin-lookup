@@ -3,7 +3,7 @@
 Forked from: https://github.com/pandabytes/koffie-labs-challenge.git
 
 # Set up environment
-This project uses [conda](https://docs.conda.io/en/latest/miniconda.html) to manage the Python environment. The required packages are documented in `koffie_labs.yml`.
+This project uses [conda](https://docs.conda.io/en/latest/miniconda.html) to manage the Python environment. The required packages are documented in `vin_lookup.yml`.
 To set up the environment to run this project, do these steps:
 1. Run this command `conda env create -f vin_lookup.yml` to create the environment with the necessary packages
 1. Run this command `conda activate vin_lookup` to make the `vin_lookup` environment active
