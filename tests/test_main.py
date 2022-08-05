@@ -122,7 +122,8 @@ class TestExportApi:
         assert expectedVin.make == actualVin.make
         assert expectedVin.model == actualVin.model
         assert expectedVin.modelYear == actualVin.modelYear
-        assert expectedVin.bodyClass == actualVin.bodyClass     
+        assert expectedVin.bodyClass == actualVin.bodyClass
+        assert expectedVin.photoUrl == actualVin.photoUrl  
     finally:
       removeInsertedVins(vins)
       os.remove(downloadFilePath)

@@ -1,13 +1,11 @@
 import requests
+from .exceptions import ApiError
 from ..db.entities import Vin
 from ..utils.vin import isVinInCorrectFormat
 from pydantic import ValidationError
-from pydantic.dataclasses import dataclass
 
-@dataclass
-class VpicApiError(Exception):
-  message: str
-  errorStatusCode: int
+class VpicApiError(ApiError):
+  pass
 
 def getVin(vin: str):
   if not isVinInCorrectFormat(vin):

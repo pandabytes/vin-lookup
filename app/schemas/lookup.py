@@ -7,4 +7,5 @@ class LookupResponse(BaseModel):
   model: str
   modelYear: str
   bodyClass: str
+  photoUrl = ""
   cachedResult: bool

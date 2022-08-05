@@ -1,8 +1,8 @@
 import os
-import requests
 import fastparquet
 import logging
 from .apis.vpic import getVin, VpicApiError
+from .apis.carImagery import getVehiclePhotoUrl, CarImageryApiError
 from .config import Settings
 from .db import entities, queries
 from .logConfig import LogConfig
@@ -14,7 +14,6 @@ from functools import lru_cache
 from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi.responses import FileResponse
 from logging.config import dictConfig
-from pydantic import ValidationError
 from sqlite3 import Connection
 
 app = FastAPI()
@@ -43,6 +42,28 @@ def __validateVinFormat(vin: str):
     raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
                         detail=f"VIN {vin} must be a 17 alphanumeric characters string.")
   return vin
+
+def __getVinViaVpic(vin: str, logger: logging.Logger):
+  # Look up vin using Vehicle API
+  entityVin: entities.Vin | None
+  try:
+    entityVin = getVin(vin)
+  except VpicApiError as ex:
+    logger.exception("Call to Vehicle API failed when looking up VIN %s. Error status code from Vehicle API is %d.", vin, ex.errorStatusCode)
+    raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=f"Call to Vehicle API returned an error. Error: {ex}") from ex
+  
+  if entityVin is None:
+    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Cannot find VIN {vin}.")
+
+  return entityVin
+
+def __getVehiclePhotoUrl(make: str, model: str, modelYear: str, logger: logging.Logger):
+  try:
+    return getVehiclePhotoUrl(make, model, modelYear)
+  except CarImageryApiError as ex:
+    loggedData = { "make": make, "model": model, "modelYear": modelYear }
+    logger.exception("Call to CarImagery API failed when looking up vehicle photo using %s. Error status code from CarImagery API is %d.", loggedData, ex.errorStatusCode)
+    raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=f"Call to CarImagery API returned an error. Error: {ex}") from ex
 
 @app.on_event("startup")
 def startup():
@@ -75,16 +96,14 @@ def lookup(vin: str,
     logger.info("Got VIN %s from cache.", vin)
     return LookupResponse(**cacheVin.dict(), cachedResult=True)
   
-  entityVin: entities.Vin | None
-  try:
-    entityVin = getVin(vin)
-  except VpicApiError as ex:
-    logger.exception("Call to Vehicle API failed when looking up VIN %s. Error status code from Vehicle API is %d", vin, ex.errorStatusCode)
-    raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=f"Call to Vehicle API returned an error. Error: {ex}") from ex
-  
-  if entityVin is None:
-    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Cannot find VIN {vin}.")
+  # Look up vin using Vehicle API and photo url using CarImagery API
+  entityVin = __getVinViaVpic(vin, logger)
+  photoUrl = __getVehiclePhotoUrl(entityVin.make, entityVin.model, entityVin.modelYear, logger)
 
+  if photoUrl is not None:
+    entityVin.photoUrl = photoUrl
+
+  # Store vin in cache
   try:
     logger.info("Inserting VIN %s to cache.", vin)
     queries.insertVin(dbConnection, entityVin)
