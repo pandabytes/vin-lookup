@@ -3,45 +3,19 @@ import fastparquet
 import logging
 from .apis.vpic import getVin, VpicApiError
 from .apis.carImagery import getVehiclePhotoUrl, CarImageryApiError
-from .config import Settings, LogConfig
+from .config import Settings
 from .db import entities, queries
+from .dependencies.singletons import getSettings, getDbConnection, getLogger
 from .schemas.lookup import LookupResponse
 from .schemas.remove import RemoveResponse
 from .utils.vin import isVinInCorrectFormat
 from .utils.conversions import convertToDataFrame
-from .utils.file import createSubdirs
 from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi.responses import FileResponse
-from functools import lru_cache
-from logging.config import dictConfig
 from pydantic import ValidationError
 from sqlite3 import Connection
 
 app = FastAPI()
-
-@lru_cache()
-def __getSettings():
-  settings = Settings()
-  
-  # Create subdirectories for files
-  createSubdirs(settings.vinCacheFilePath, True)
-  createSubdirs(settings.parquetFilePath, True)
-
-  return settings
-
-@lru_cache()
-def __getDbConnection():
-  settings = __getSettings()
-  return queries.connectToVinDatabase(settings.vinCacheFilePath)
-
-@lru_cache
-def __getLogger():
-  # Set up logging
-  loggerName, logConfig = __name__, LogConfig()
-  logConfig.addLogger(loggerName, "INFO")
-
-  dictConfig(logConfig.dict())
-  return logging.getLogger(loggerName)
 
 def __validateVinFormat(vin: str):
   vin = vin.strip().upper()
@@ -74,22 +48,22 @@ def __getVehiclePhotoUrl(make: str, model: str, modelYear: str, logger: logging.
 
 @app.on_event("startup")
 def startup():
-  settings, logger = __getSettings(), __getLogger()
+  settings, logger = getSettings(), getLogger()
   logger.info(f"Connecting to vin cache at \"{settings.vinCacheFilePath}\".")
-  _ = __getDbConnection()
+  _ = getDbConnection()
 
 @app.on_event("shutdown")
 def shutdown():
-  logger = __getLogger()
+  logger = getLogger()
   logger.info("Shutting down service.")
   logger.info("Closing database connection.")
-  dbConnection = __getDbConnection()
+  dbConnection = getDbConnection()
   dbConnection.close()
 
 @app.get("/lookup/{vin}", status_code=status.HTTP_200_OK)
 def lookup(vin: str,
-           logger: logging.Logger = Depends(__getLogger),
-           dbConnection: Connection = Depends(__getDbConnection)):
+           logger: logging.Logger = Depends(getLogger),
+           dbConnection: Connection = Depends(getDbConnection)):
   """ Lookup the given vin number in the cache. If the vin is not in the
       cache, then try to get it from [Vehicle API](https://vpic.nhtsa.dot.gov/api/)
       and insert the vin in the cache if found.
@@ -120,8 +94,8 @@ def lookup(vin: str,
 
 @app.delete("/remove/{vin}", status_code=status.HTTP_200_OK)
 def remove(vin: str,
-           logger: logging.Logger = Depends(__getLogger),
-           dbConnection: Connection = Depends(__getDbConnection)):
+           logger: logging.Logger = Depends(getLogger),
+           dbConnection: Connection = Depends(getDbConnection)):
   """ Remove the vin from cache. This API will return a status of 200, whether
       the vin was successfully removed or not from the cache. Client can use the 
       field `cacheDeleteSuccess` to check the actual success status of the API.
@@ -135,9 +109,9 @@ def remove(vin: str,
     raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Something happened on our end.") from ex
 
 @app.get("/export", status_code=status.HTTP_200_OK)
-def export(logger: logging.Logger = Depends(__getLogger),
-           dbConnection: Connection = Depends(__getDbConnection),
-           settings: Settings = Depends(__getSettings)):
+def export(logger: logging.Logger = Depends(getLogger),
+           dbConnection: Connection = Depends(getDbConnection),
+           settings: Settings = Depends(getSettings)):
   """ Export the cache to a parq file (Parquet format). If the cache is empty,
       then export an empty parq file.
   """
