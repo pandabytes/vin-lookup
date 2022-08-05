@@ -6,6 +6,7 @@ from fastapi import status
 import app.main as main
 from app.schemas.remove import RemoveResponse
 from app.schemas.lookup import LookupResponse
+from app.utils.conversions import DATAFRAME_COLUMNS
 
 client = TestClient(main.app)
 
@@ -111,17 +112,19 @@ class TestExportApi:
       # the exported content against the content we inserted earlier
       parqFile = fastparquet.ParquetFile(downloadFilePath)
       cacheDf = parqFile.to_pandas()
+
+      # Assert dimensions of cacheDf
       assert cacheDf.shape[0] == len(vins)
+      assert cacheDf.shape[1] == len(DATAFRAME_COLUMNS)
 
       for (expectedVin , (_, actualVin)) in zip(expectedVins, cacheDf.iterrows()):
         assert expectedVin.vin == actualVin.vin
         assert expectedVin.make == actualVin.make
         assert expectedVin.model == actualVin.model
         assert expectedVin.modelYear == actualVin.modelYear
-        assert expectedVin.bodyClass == actualVin.bodyClass
-
-      removeInsertedVins(vins)
+        assert expectedVin.bodyClass == actualVin.bodyClass     
     finally:
+      removeInsertedVins(vins)
       os.remove(downloadFilePath)
     
   def test_export_with_no_vin_in_cache(self):

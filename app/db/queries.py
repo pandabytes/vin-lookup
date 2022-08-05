@@ -17,7 +17,8 @@ def connectToVinDatabase(filePath: str):
         make TEXT NOT NULL,
         model TEXT NOT NULL,
         modelYear TEXT NOT NULL,
-        bodyClass TEXT NOT NULL
+        bodyClass TEXT NOT NULL,
+        photoUrl TEXT NOT NULL
       )
     """)
 
@@ -27,15 +28,20 @@ def connectToVinDatabase(filePath: str):
 def __mapRowToVin(row: tuple) -> Vin:
   """ Attempt to map the raw data from sqlite (tuple) to Vin object. """
   try:
-    return Vin(vin=row[0], make=row[1], model=row[2], modelYear=row[3], bodyClass=row[4])
+    return Vin(vin=row[0],
+               make=row[1],
+               model=row[2],
+               modelYear=row[3],
+               bodyClass=row[4],
+               photoUrl=row[5])
   except Exception as ex:
     raise ValueError(f"Unable to map from object {row} to Vin entity object. Error: {ex}")
 
 def insertVin(connection: sqlite3.Connection, vin: Vin):
   """ Insert `vin` to the the Vin table. """
   with closing(connection.cursor()) as cursor:
-    insertParams = (vin.vin, vin.make, vin.model, vin.modelYear, vin.bodyClass)
-    cursor.execute("INSERT INTO Vin VALUES (?, ?, ?, ?, ?)", insertParams)
+    insertParams = (vin.vin, vin.make, vin.model, vin.modelYear, vin.bodyClass, vin.photoUrl)
+    cursor.execute("INSERT INTO Vin VALUES (?, ?, ?, ?, ?, ?)", insertParams)
     connection.commit()
   
 def getVin(connection: sqlite3.Connection, vin: str) -> Vin | None:
