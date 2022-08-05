@@ -7,7 +7,7 @@ from pydantic import ValidationError
 class VpicApiError(ApiError):
   pass
 
-def getVin(vin: str):
+def getVin(vin: str) -> dict[str, str]:
   if not isVinInCorrectFormat(vin):
     raise ValueError(f"VIN {vin} must be a 17 alphanumeric characters string.")
 
@@ -16,14 +16,12 @@ def getVin(vin: str):
     response.raise_for_status()
   except requests.HTTPError as ex:
     raise VpicApiError(f"Failed to get VIN {vin} from vpic API.", response.status_code) from ex
-    
-  try:
-    jsonObj = response.json()["Results"][0]
 
-    return Vin(vin=vin, 
-               make=jsonObj["Make"],
-               model=jsonObj["Model"],
-               modelYear=jsonObj["ModelYear"],
-               bodyClass=jsonObj["BodyClass"])
-  except ValidationError:    
-    return None
+  jsonObj = response.json()["Results"][0]
+  return {
+    "vin": vin,
+    "make": jsonObj["Make"],
+    "model": jsonObj["Model"],
+    "modelYear": jsonObj["ModelYear"],
+    "bodyClass": jsonObj["BodyClass"]
+  }

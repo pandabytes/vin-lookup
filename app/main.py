@@ -10,10 +10,11 @@ from .schemas.lookup import LookupResponse
 from .schemas.remove import RemoveResponse
 from .utils.vin import isVinInCorrectFormat
 from .utils.conversions import convertToDataFrame
-from functools import lru_cache
 from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi.responses import FileResponse
+from functools import lru_cache
 from logging.config import dictConfig
+from pydantic import ValidationError
 from sqlite3 import Connection
 
 app = FastAPI()
@@ -44,18 +45,18 @@ def __validateVinFormat(vin: str):
   return vin
 
 def __getVinViaVpic(vin: str, logger: logging.Logger):
-  # Look up vin using Vehicle API
-  entityVin: entities.Vin | None
+  vinDict: dict[str, str]
   try:
-    entityVin = getVin(vin)
+    vinDict = getVin(vin)
   except VpicApiError as ex:
     logger.exception("Call to Vehicle API failed when looking up VIN %s. Error status code from Vehicle API is %d.", vin, ex.errorStatusCode)
     raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=f"Call to Vehicle API returned an error. Error: {ex}") from ex
   
-  if entityVin is None:
+  try:
+    return entities.Vin(**vinDict)
+  except ValidationError as ex:
+    # This also means the data we get back from vpic API do not match with what we expect
     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Cannot find VIN {vin}.")
-
-  return entityVin
 
 def __getVehiclePhotoUrl(make: str, model: str, modelYear: str, logger: logging.Logger):
   try:

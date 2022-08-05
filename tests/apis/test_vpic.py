@@ -21,31 +21,12 @@ def test_getVin_vpic_api_failed(errorStatusCode: int):
       getVin(FAKE_VALID_FORMAT_VIN)
     assert ex.value.errorStatusCode == errorStatusCode
 
-def test_getVin_returns_None():
-  with patch("requests.get") as mockRequestsGet:
-    dummyJsonResponse = {
-      "Results": [
-        {
-          "Make": "",
-          "Model": "",
-          "ModelYear": "",
-          "BodyClass": ""
-        }
-      ] 
-    }
-
-    dummyResponse = requests.Response()
-    dummyResponse.status_code = 200
-    dummyResponse.json = MagicMock(return_value=dummyJsonResponse)
-    mockRequestsGet.return_value = dummyResponse
-
-    assert None is getVin(FAKE_VALID_FORMAT_VIN)
-
 def test_getVin_returns_vin_object():
-  vin = getVin(REAL_VINS[0])
-  assert vin is not None
-  assert vin.vin != ""
-  assert vin.make != ""
-  assert vin.model != ""
-  assert vin.modelYear != ""
-  assert vin.bodyClass != ""
+  vinDict = getVin(REAL_VINS[0])
+  setDiff = { "vin", "make", "model", "modelYear", "bodyClass" }.symmetric_difference(vinDict.keys())
+  assert len(setDiff) == 0
+  assert vinDict["vin"] != ""
+  assert vinDict["make"] != ""
+  assert vinDict["model"] != ""
+  assert vinDict["modelYear"] != ""
+  assert vinDict["bodyClass"] != ""
