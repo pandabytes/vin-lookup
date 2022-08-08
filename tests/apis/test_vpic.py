@@ -22,11 +22,9 @@ def test_getVin_vpic_api_failed(errorStatusCode: int):
     assert ex.value.errorStatusCode == errorStatusCode
 
 def test_getVin_returns_vin_object():
-  vinDict = getVin(REAL_VINS[0])
-  setDiff = { "vin", "make", "model", "modelYear", "bodyClass" }.symmetric_difference(vinDict.keys())
-  assert len(setDiff) == 0
-  assert vinDict["vin"] != ""
-  assert vinDict["make"] != ""
-  assert vinDict["model"] != ""
-  assert vinDict["modelYear"] != ""
-  assert vinDict["bodyClass"] != ""
+  vpicVin = getVin(REAL_VINS[0])
+  assert vpicVin.vin != ""
+  assert vpicVin.make != ""
+  assert vpicVin.model != ""
+  assert vpicVin.modelYear != ""
+  assert vpicVin.bodyClass != ""

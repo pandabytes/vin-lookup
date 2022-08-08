@@ -25,18 +25,11 @@ def __validateVinFormat(vin: str):
   return vin
 
 def __getVinViaVpic(vin: str, logger: logging.Logger):
-  vinDict: dict[str, str]
   try:
-    vinDict = getVin(vin)
+    return getVin(vin)
   except VpicApiError as ex:
     logger.exception("Call to Vehicle API failed when looking up VIN %s. Error status code from Vehicle API is %d.", vin, ex.errorStatusCode)
     raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=f"Call to Vehicle API returned an error. Error: {ex}") from ex
-  
-  try:
-    return entities.Vin(**vinDict)
-  except ValidationError as ex:
-    # This also means the data we get back from vpic API do not match with what we expect
-    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Cannot find VIN {vin}.")
 
 def __getVehiclePhotoUrl(make: str, model: str, modelYear: str, logger: logging.Logger):
   try:
@@ -45,6 +38,24 @@ def __getVehiclePhotoUrl(make: str, model: str, modelYear: str, logger: logging.
     loggedData = { "make": make, "model": model, "modelYear": modelYear }
     logger.exception("Call to CarImagery API failed when looking up vehicle photo using %s. Error status code from CarImagery API is %d.", loggedData, ex.errorStatusCode)
     raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=f"Call to CarImagery API returned an error. Error: {ex}") from ex
+
+def __createEntityVin(vin: str, logger: logging.Logger):
+  vpicVin = __getVinViaVpic(vin, logger)
+  if vpicVin.make.strip() == "" or \
+     vpicVin.model.strip() == "" or \
+     vpicVin.modelYear.strip() == "" or \
+     vpicVin.bodyClass.strip() == "":
+    # This also means the data we get back from vpic API do not match with what we expect
+    # We raise exception so that we don't need to send a request to Car Imagery to get the photo url
+    # if the requested vin is not in the format we expect
+    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Cannot find VIN {vin}.")
+
+  try:
+    photoUrl = __getVehiclePhotoUrl(vpicVin.make, vpicVin.model, vpicVin.modelYear, logger)
+    return entities.Vin(**vpicVin.dict(), photoUrl=photoUrl)
+  except ValidationError as ex:
+    # This also means the data we get back from vpic API do not match with what we expect
+    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Cannot find VIN {vin}.") from ex
 
 @app.on_event("startup")
 def startup():
@@ -76,12 +87,7 @@ def lookup(vin: str,
     logger.info("Got VIN %s from cache.", vin)
     return LookupResponse(**cacheVin.dict(), cachedResult=True)
   
-  # Look up vin using Vehicle API and photo url using CarImagery API
-  entityVin = __getVinViaVpic(vin, logger)
-  photoUrl = __getVehiclePhotoUrl(entityVin.make, entityVin.model, entityVin.modelYear, logger)
-
-  if photoUrl is not None:
-    entityVin.photoUrl = photoUrl
+  entityVin = __createEntityVin(vin, logger)
 
   # Store vin in cache
   try:
