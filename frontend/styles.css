@@ -1,0 +1,17 @@
+.title {
+    text-align: center
+}
+
+.vin-lookup-form, .loading, .vins-table {
+    width: 50%;
+    margin: 0 auto;
+}
+
+.loading {
+    text-align: center;
+}
+
+.vins {
+    width: 80%;
+    margin: 0 auto;
+}

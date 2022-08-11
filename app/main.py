@@ -11,11 +11,23 @@ from .schemas.remove import RemoveResponse
 from .utils.vin import isVinInCorrectFormat
 from .utils.conversions import convertToDataFrame
 from fastapi import Depends, FastAPI, HTTPException, status
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pydantic import ValidationError
 from sqlite3 import Connection
 
 app = FastAPI()
+
+# TODO: update this to allow certain origins only
+origins = ["*"]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 def __validateVinFormat(vin: str):
   vin = vin.strip().upper()
