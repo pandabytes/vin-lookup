@@ -20,10 +20,11 @@ def test_getVehiclePhotoUrl_carImagery_api_failed(errorStatusCode: int):
       getVehiclePhotoUrl("Toyota", "Camry", "2020")
     assert ex.value.errorStatusCode == errorStatusCode
 
-def test_getVehiclePhotoUrl_returns_None():
+@pytest.mark.parametrize("xmlStr", ["", "<xml></xml>", "<xml>", "<foo></bar>"])
+def test_getVehiclePhotoUrl_returns_None(xmlStr: str):
   with patch("requests.get") as mockRequestsGet:
     with patch("requests.Response.text", new_callable=PropertyMock) as mockResponseText:
-      mockResponseText.return_value = "<xml></xml>"
+      mockResponseText.return_value = xmlStr
       
       dummyResponse = requests.Response()
       dummyResponse.status_code = 200

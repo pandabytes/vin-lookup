@@ -19,5 +19,7 @@ def getVehiclePhotoUrl(make: str, model: str, modelYear: str):
     root = ET.fromstring(response.text)
     url = root.text
     return url if isUrl(url) else None
+  except ET.ParseError:
+    return None
   except requests.HTTPError as ex:
     raise CarImageryApiError(f"Failed to get photo url from CarImagery API.", response.status_code) from ex
