@@ -6,7 +6,12 @@ from ..utils.url import isUrl
 class CarImageryApiError(ApiError):
   pass
 
-def getVehiclePhotoUrl(make: str, model: str, modelYear = ""):
+def getVehiclePhotoUrl(make: str, model: str, modelYear: str):
+  # Make sure arguments aren't empty or whitespaces
+  make, model, modelYear = make.strip(), model.strip(), modelYear.strip()
+  if make == "" or model == "" or modelYear == "":
+    raise ValueError("All arguments must not be empty string and not contain only whitespaces.")
+
   searchTerm = f"{make} {model} {modelYear}"
   response = requests.get(f"https://www.carimagery.com/api.asmx/GetImageUrl?searchTerm={searchTerm}")
   try:

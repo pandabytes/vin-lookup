@@ -1,13 +1,20 @@
 import requests
 from .exceptions import ApiError
-from ..db.entities import Vin
 from ..utils.vin import isVinInCorrectFormat
-from pydantic import ValidationError
+from pydantic import BaseModel
 
 class VpicApiError(ApiError):
   pass
 
-def getVin(vin: str) -> dict[str, str]:
+class VpicVin(BaseModel):
+  """ This simply a plain old data object. It only stores data, so no logic or validation. """
+  vin: str
+  make: str
+  model: str
+  modelYear: str
+  bodyClass: str
+
+def getVin(vin: str):
   if not isVinInCorrectFormat(vin):
     raise ValueError(f"VIN {vin} must be a 17 alphanumeric characters string.")
 
@@ -18,10 +25,8 @@ def getVin(vin: str) -> dict[str, str]:
     raise VpicApiError(f"Failed to get VIN {vin} from vpic API.", response.status_code) from ex
 
   jsonObj = response.json()["Results"][0]
-  return {
-    "vin": vin,
-    "make": jsonObj["Make"],
-    "model": jsonObj["Model"],
-    "modelYear": jsonObj["ModelYear"],
-    "bodyClass": jsonObj["BodyClass"]
-  }
+  return VpicVin(vin=vin,
+                 make=jsonObj["Make"],
+                 model=jsonObj["Model"],
+                 modelYear=jsonObj["ModelYear"],
+                 bodyClass=jsonObj["BodyClass"])
