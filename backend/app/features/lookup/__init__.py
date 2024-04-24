@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 from sqlalchemy.orm.session import Session
 
+from backend.app.apis import vpic
 from backend.app.db.connection import get_db_session
 from backend.app.db.entities.vin import queries as vin_queries
 from backend.app.schemas.vin import Vin
@@ -15,7 +16,8 @@ class LookupResponse(BaseModel):
   model: str
   model_year: str
   body_class: str
-  photo_url: str = ""
+  photo_url: str = ''
+  cached: bool = False
 
 @router.get('/lookup/{vin}', status_code=status.HTTP_200_OK)
 def lookup(vin: str, db_session: Session = Depends(get_db_session)):
@@ -24,8 +26,18 @@ def lookup(vin: str, db_session: Session = Depends(get_db_session)):
                         detail='VIN must be a 17 alphanumeric characters string.')
 
   cache_vin = vin_queries.find_vin(db_session, vin)
-  if not cache_vin:
-    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                        detail=f'VIN {vin} not found.')
+  if cache_vin:
+    return LookupResponse(**cache_vin.model_dump(), cached=True)
 
-  return LookupResponse(**cache_vin.model_dump())
+  try:
+    fetched_vin = vpic.find_vin(vin)
+    if fetched_vin:
+      vin_queries.insert_vin(db_session, fetched_vin)
+      return LookupResponse(**fetched_vin.model_dump(), cached=False)
+  except vpic.VpicApiError as ex:
+    raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                        detail=f'vpic API returns an error: {ex}.') from ex
+
+  # VIN not found
+  raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                      detail=f'VIN {vin} not found.')
