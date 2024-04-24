@@ -28,3 +28,13 @@ def insert_vin(db: Session, vin: Vin):
 
   db.add(vin_entity)
   db.commit()
+
+def remove_vin(db: Session, vin: str) -> bool:
+  removed_count = (db
+    .query(VinEntity)
+    .filter(VinEntity.vin == vin)
+    .delete()
+  )
+
+  db.commit()
+  return removed_count == 1
