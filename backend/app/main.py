@@ -1,8 +1,8 @@
 import os
 from fastapi import FastAPI
-from backend.app.db.connection import Base, Engine, SQLITE_FILE_PATH
-from backend.app.features import lookup
-from backend.app.features import remove
+from .db.connection import Base, Engine, SQLITE_FILE_PATH
+from .features import lookup
+from .features import remove
 
 # Remove the sqlite cache at startup
 if os.path.exists(SQLITE_FILE_PATH):

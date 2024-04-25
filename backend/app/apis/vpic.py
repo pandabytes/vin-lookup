@@ -1,7 +1,7 @@
 import requests
 from pydantic import ValidationError
-from backend.app.apis.exceptions import ApiError
-from backend.app.schemas.vin import Vin
+from .exceptions import ApiError
+from ..schemas.vin import Vin
 
 class VpicApiError(ApiError):
   pass

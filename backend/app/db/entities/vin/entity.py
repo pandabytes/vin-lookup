@@ -1,5 +1,5 @@
 from sqlalchemy import Column, Integer, String
-from backend.app.db.connection import Base
+from ...connection import Base
 
 class VinEntity(Base):
   """ The entity that models the data in the Vin cache. """

@@ -1,3 +1,3 @@
-from backend.app.db.entities.vin.entity import VinEntity
+from .vin.entity import VinEntity
 
 

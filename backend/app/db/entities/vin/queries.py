@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from backend.app.schemas import Vin
+from ....schemas import Vin
 from .entity import VinEntity
 
 def find_vin(db: Session, vin: str) -> Vin | None:

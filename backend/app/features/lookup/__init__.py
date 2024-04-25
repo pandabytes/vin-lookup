@@ -2,10 +2,10 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 from sqlalchemy.orm.session import Session
 
-from backend.app.apis import vpic
-from backend.app.db.connection import get_db_session
-from backend.app.db.entities.vin import queries as vin_queries
-from backend.app.schemas.vin import Vin
+from ...apis import vpic
+from ...db.connection import get_db_session
+from ...db.entities.vin import queries as vin_queries
+from ...schemas.vin import Vin
 
 router = APIRouter()
 
