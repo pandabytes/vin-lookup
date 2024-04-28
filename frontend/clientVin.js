@@ -1,5 +1,5 @@
-const form = document.querySelector('form'); // 'form' is tagname
-const loadingElement = document.querySelector('.loading'); // '.loading' is class
+const form = document.querySelector('.vin-lookup-form'); // 'form' is tagname
+// const loadingElement = document.querySelector('.loading'); // '.loading' is class
 const API_URL = 'http://localhost:8000';
 
 const cachedVins = new Map()
@@ -13,7 +13,16 @@ async function lookupVin(vin) {
   return await response.json();
 }
 
-function addVin(vinJson) {
+async function listVins() {
+  const url = `${API_URL}/list`;
+  const response = await fetch(url, { method: 'GET', 'content-type': 'application/json' });
+  if (!response.ok) {
+    throw new Error(`VIN lookup api returned with a ${response.statusText}.`);
+  }
+  return await response.json();
+}
+
+function addVinToTable(vinJson) {
   const table = document.querySelector('.vins');
   const row = table.insertRow(0);
   
@@ -43,22 +52,37 @@ function addVin(vinJson) {
   photoCell.appendChild(img);  
 }
 
+function addVin(vinJson) {
+  if (cachedVins.has(vinJson.vin)) {
+    return;
+  }
+
+  addVinToTable(vinJson);
+  cachedVins.set(vinJson.vin, vinJson);
+}
+
 form.addEventListener('submit', (event) => {
   // By default when submitting a 'form',
   // the browser tries to submit the data to somewhere
   event.preventDefault();
 
   const formData = new FormData(form);
-  const vinNumber = formData.get('vin');
+  const vinNumber = formData.get('vin').trim();
 
   if (cachedVins.has(vinNumber)) {
     return;
   }
 
   lookupVin(vinNumber)
-    .then(vinJson => {
-      addVin(vinJson);
-      cachedVins.set(vinJson.vin, vinJson);
-    })
+    .then(addVin)
     .catch(error => alert(error));
 });
+
+// List all VINs during initialization
+listVins()
+  .then(vinsJson => {
+    for (const vinJson of vinsJson.vins) {
+      addVin(vinJson);
+    }
+  })
+  .catch(error => alert(`Failed to fetch VINs: ${error}.`));
