@@ -20,7 +20,7 @@ class LookupResponse(BaseModel):
   cached: bool = False
 
 @router.get('/lookup/{vin}', status_code=status.HTTP_200_OK)
-def lookup(vin: str, db_session: Session = Depends(get_db_session)):
+def lookup(vin: str, db_session: Session = Depends(get_db_session)) -> LookupResponse:
   if not Vin.is_vin_correct_format(vin):
     raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
                         detail='VIN must be a 17 alphanumeric characters string.')

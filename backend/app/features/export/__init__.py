@@ -1,7 +1,10 @@
 import tempfile
+
+from enum import Enum
+
 import fastparquet
 import pandas as pd
-from fastapi import APIRouter, BackgroundTasks, Depends, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from fastapi.responses import FileResponse
 from sqlalchemy.orm.session import Session
 
@@ -9,10 +12,18 @@ from ...db.connection import get_db_session
 from ...db.entities.vin import queries as vin_queries
 from ...schemas.vin import Vin
 
+class ExportFormat(str, Enum):
+  CSV = 'csv'
+  PARQUET = 'parquet'
+
 router = APIRouter()
 
 @router.get("/export", status_code=status.HTTP_200_OK)
-def export(background_tasks: BackgroundTasks, db_session: Session = Depends(get_db_session)):
+def export(
+  background_tasks: BackgroundTasks,
+  export_format: ExportFormat = ExportFormat.CSV,
+  db_session: Session = Depends(get_db_session)
+) -> FileResponse:
   vins = vin_queries.get_all_vins(db_session)
   if not vins:
     return None
@@ -26,7 +37,15 @@ def export(background_tasks: BackgroundTasks, db_session: Session = Depends(get_
     background_tasks.add_task(temp_file.close)
 
     df = _convert_to_dataframe(vins)
-    fastparquet.write(file_path, df)
+
+    match export_format:
+      case ExportFormat.CSV:
+        df.to_csv(file_path, header=True, sep=',', index=False)
+      case ExportFormat.PARQUET:
+        fastparquet.write(file_path, df)
+      case _:
+        raise NotImplementedError(f'Export format {export_format} is not supported.')
+
     return FileResponse(
       file_path,
       filename='vins_cache.parquet',

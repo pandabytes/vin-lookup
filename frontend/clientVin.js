@@ -22,8 +22,8 @@ async function listVins() {
   return await response.json();
 }
 
-async function exportVins() {
-  const url = `${API_URL}/export`;
+async function exportVins(export_format = 'csv') {
+  const url = `${API_URL}/export?export_format=${export_format}`;
   const response = await fetch(url, { method: 'GET' });
   if (!response.ok) {
     throw new Error(`VIN lookup api returned with a ${response.statusText}.`);

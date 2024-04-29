@@ -14,7 +14,7 @@ class RemoveResponse(BaseModel):
   cache_delete_success: bool
 
 @router.delete("/remove/{vin}", status_code=status.HTTP_200_OK)
-def remove(vin: str, db_session: Session = Depends(get_db_session)):
+def remove(vin: str, db_session: Session = Depends(get_db_session)) -> RemoveResponse:
   if not Vin.is_vin_correct_format(vin):
     raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
                         detail='VIN must be a 17 alphanumeric characters string.')
