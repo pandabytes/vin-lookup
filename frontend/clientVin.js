@@ -22,6 +22,23 @@ async function listVins() {
   return await response.json();
 }
 
+async function exportVins() {
+  const url = `${API_URL}/export`;
+  const response = await fetch(url, { method: 'GET' });
+  if (!response.ok) {
+    throw new Error(`VIN lookup api returned with a ${response.statusText}.`);
+  }
+
+  const blob = await response.blob();
+  const urlBlob = URL.createObjectURL(blob);
+  const anchorElement = document.createElement('a');
+  anchorElement.href = urlBlob;
+  anchorElement.download = 'vins.parquet' ?? '';
+  anchorElement.click();
+  anchorElement.remove();
+  URL.revokeObjectURL(url);
+}
+
 function addVinToTable(vinJson) {
   const table = document.querySelector('.vins');
   const row = table.insertRow(0);
@@ -66,16 +83,21 @@ form.addEventListener('submit', (event) => {
   // the browser tries to submit the data to somewhere
   event.preventDefault();
 
-  const formData = new FormData(form);
-  const vinNumber = formData.get('vin').trim();
+  if (event.submitter.name === 'search') {
+    const formData = new FormData(form);
+    const vinNumber = formData.get('vin').trim();
+  
+    if (cachedVins.has(vinNumber)) {
+      return;
+    }
+  
+    lookupVin(vinNumber)
+      .then(addVin)
+      .catch(error => alert(error));
 
-  if (cachedVins.has(vinNumber)) {
-    return;
+  } else if (event.submitter.name === 'export') {
+    exportVins().catch(error => alert(`Failed to export vins: ${error}.`));
   }
-
-  lookupVin(vinNumber)
-    .then(addVin)
-    .catch(error => alert(error));
 });
 
 // List all VINs during initialization
