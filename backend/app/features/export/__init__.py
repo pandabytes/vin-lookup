@@ -18,7 +18,7 @@ class ExportFormat(str, Enum):
 
 router = APIRouter()
 
-@router.get("/export", status_code=status.HTTP_200_OK)
+@router.get('/export', status_code=status.HTTP_200_OK)
 def export(
   background_tasks: BackgroundTasks,
   export_format: ExportFormat = ExportFormat.CSV,
@@ -28,7 +28,7 @@ def export(
   if not vins:
     return None
 
-  # Create a temp file to store the vins in parquet file
+  # Create a temp file to store the vins
   temp_file = tempfile.NamedTemporaryFile(delete_on_close=True)
   file_path = temp_file.name
 
@@ -48,7 +48,7 @@ def export(
 
     return FileResponse(
       file_path,
-      filename='vins_cache.parquet',
+      filename=f'vins_cache.{export_format.value}',
     )
   except:
     # Close the file when something unexpected happened
@@ -56,7 +56,7 @@ def export(
     raise
 
 def _convert_to_dataframe(vins: list[Vin]) -> pd.DataFrame:
-  df_columns = ["vin", "make", "model", "model_year", "body_class", "photo_url"]
+  df_columns = ['vin', 'make', 'model', 'model_year', 'body_class', 'photo_url']
   data = []
 
   for vin in vins:

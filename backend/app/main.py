@@ -1,6 +1,7 @@
 import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from .db.connection import Base, Engine, SQLITE_FILE_PATH
 from .features import lookup
 from .features import remove
@@ -31,3 +32,6 @@ app.include_router(lookup.router)
 app.include_router(remove.router)
 app.include_router(export.router)
 app.include_router(list_vins.router)
+
+frontend_path = os.path.join(os.path.dirname(__file__), 'frontend')
+app.mount('/', StaticFiles(directory=frontend_path, html=True), name='frontend')
