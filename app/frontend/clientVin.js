@@ -1,8 +1,7 @@
 const form = document.querySelector('.vin-lookup-form'); // 'form' is tagname
-// const loadingElement = document.querySelector('.loading'); // '.loading' is class
 const API_URL = 'http://localhost:8000';
 
-const cachedVins = new Map()
+const cachedVins = new Set();
 
 async function lookupVin(vin) {
   const url = `${API_URL}/lookup/${vin}`;
@@ -33,7 +32,7 @@ async function exportVins(export_format = 'csv') {
   const urlBlob = URL.createObjectURL(blob);
   const anchorElement = document.createElement('a');
   anchorElement.href = urlBlob;
-  anchorElement.download = 'vins.parquet' ?? '';
+  anchorElement.download = `vins.${export_format}` ?? '';
   anchorElement.click();
   anchorElement.remove();
   URL.revokeObjectURL(url);
@@ -75,7 +74,7 @@ function addVin(vinJson) {
   }
 
   addVinToTable(vinJson);
-  cachedVins.set(vinJson.vin, vinJson);
+  cachedVins.add(vinJson.vin);
 }
 
 form.addEventListener('submit', (event) => {
