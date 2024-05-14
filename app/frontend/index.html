@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VIN Lookup</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/skeleton/2.0.4/skeleton.min.css">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header>
+    <h1 class="title">VIN Lookup</h1>
+  </header>
+
+  <main>
+    <form class="vin-lookup-form">
+      <label for="vin">Lookup a VIN</label>
+      <input class="u-full-width" type="text" id="vin" name="vin">
+      <button class="button-primary" name="search">Search</button>
+      <button class="button-primary" name="export">Export</button>
+    </form>
+  </main>
+
+  <p></p>
+
+  <table class="u-full-width vins-table">
+    <thead>
+      <tr>
+        <th>VIN</th>
+        <th>Make</th>
+        <th>Model</th>
+        <th>Year</th>
+        <th>Body Class</th>
+        <th>Photo</th>
+      </tr>
+    </thead>
+    <tbody class="vins">
+    </tbody>
+  </table>
+
+  <script src="clientVin.js"></script>
+</body>
+</html>
