@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
-import Header from './Header';
-import SearchVin from './SearchVin';
-import ExportVins from './ExportVins';
-import VinsTable from './VinsTable';
+import Header from './Components/Header';
+import SearchVin from './Components/SearchVin';
+import ExportVins from './Components/ExportVins';
+import VinsTable from './Components/VinsTable';
 
 const API_URL = 'http://localhost:8000';
 
