@@ -17,19 +17,15 @@ function VinRow({ vin, make, model, modelYear, bodyClass, photoUrl }) {
 }
 
 export default function VinsTable({ vins }) {
-  const vin_rows = [];
-
-  vins.forEach(vin => {
-    vin_rows.push(
-      <VinRow key={vin.vin}
-              vin={vin.vin}
-              make={vin.make}
-              model={vin.model}
-              modelYear={vin.modelYear}
-              bodyClass={vin.bodyClass}
-              photoUrl={vin.photoUrl} />
-    );
-  });
+  const vin_rows = vins.map(vin =>
+    <VinRow key={vin.vin}
+            vin={vin.vin}
+            make={vin.make}
+            model={vin.model}
+            modelYear={vin.modelYear}
+            bodyClass={vin.bodyClass}
+            photoUrl={vin.photoUrl} />
+  );
 
   return (
     <table className="u-full-width vins-table">
