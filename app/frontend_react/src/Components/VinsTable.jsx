@@ -39,9 +39,10 @@ export default function VinsTable({ vins }) {
           <th>Photo</th>
         </tr>
       </thead>
-        <tbody className="vins">
-          {vin_rows}
-        </tbody>
+
+      <tbody className="vins">
+        {vin_rows}
+      </tbody>
     </table>
   );
 }

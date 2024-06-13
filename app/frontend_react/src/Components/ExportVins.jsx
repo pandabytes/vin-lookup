@@ -1,10 +1,11 @@
 export default function ExportVins({ onExportClicked }) {
+  const exportFormatName = 'export-format'
 
   function submitForm(event) {
     event.preventDefault();
 
     const formData = new FormData(event.target);
-    const exportFormat = formData.get('export-format');
+    const exportFormat = formData.get(exportFormatName);
     onExportClicked(exportFormat);
   }
 
@@ -12,7 +13,7 @@ export default function ExportVins({ onExportClicked }) {
     <>
       <form className="vin-lookup-form" onSubmit={submitForm}>
         <label>Select export format:</label>
-        <select name="export-format">
+        <select name={exportFormatName}>
           <option value="csv">CSV</option>
           <option value="parquet">Parquet</option>
         </select>
