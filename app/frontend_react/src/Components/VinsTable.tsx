@@ -1,25 +1,27 @@
-function VinRow({ vin, make, model, modelYear, bodyClass, photoUrl }) {
+import { Vin } from '../types';
+
+function VinRow({ vinNumber, make, model, modelYear, bodyClass, photoUrl }: Vin) {
   return (
     <tr>
-      <td>{vin}</td>
+      <td>{vinNumber}</td>
       <td>{make}</td>
       <td>{model}</td>
       <td>{modelYear}</td>
       <td>{bodyClass}</td>
       <td>
-        <img id={`img-${vin}`}
+        <img id={`img-${vinNumber}`}
              src={photoUrl}
-             alt={vin}
+             alt={vinNumber}
              style={{ height: '100px', width: '200px' }} />
       </td>
     </tr>
   );
 }
 
-export default function VinsTable({ vins }) {
+export default function VinsTable({ vins }: { vins: Array<Vin> }) {
   const vin_rows = vins.map(vin =>
-    <VinRow key={vin.vin}
-            vin={vin.vin}
+    <VinRow key={vin.vinNumber}
+            vinNumber={vin.vinNumber}
             make={vin.make}
             model={vin.model}
             modelYear={vin.modelYear}

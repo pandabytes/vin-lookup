@@ -1,12 +1,20 @@
-export default function ExportVins({ onExportClicked }) {
+import { FormEvent } from "react";
+
+export type ExportVinsArgs = {
+  onExportClicked?: (arg: string) => void;
+};
+
+export default function ExportVins({ onExportClicked }: ExportVinsArgs) {
   const exportFormatName = 'export-format'
 
-  function submitForm(event) {
+  function submitForm(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    const formData = new FormData(event.target);
-    const exportFormat = formData.get(exportFormatName);
-    onExportClicked(exportFormat);
+    if (onExportClicked) {
+      const formData = new FormData(event.target as HTMLFormElement);
+      const exportFormat = formData.get(exportFormatName)!.toString()
+      onExportClicked(exportFormat);
+    }
   }
 
   return (

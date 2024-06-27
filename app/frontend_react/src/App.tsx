@@ -4,27 +4,33 @@ import SearchVin from './Components/SearchVin';
 import ExportVins from './Components/ExportVins';
 import VinsTable from './Components/VinsTable';
 
+import { Vin } from './types';
+
 const API_URL = 'http://localhost:8000';
 
-async function lookupVin(vin) {
+async function lookupVin(vin: string): Promise<Vin> {
   const url = `${API_URL}/lookup/${vin}`;
-  const response = await fetch(url, { method: 'GET', 'content-type': 'application/json' });
+  const response = await fetch(url, { method: 'GET' });
   if (!response.ok) {
     throw new Error(`VIN lookup api returned with a ${response.statusText}.`);
   }
-  return await response.json();
+  
+  const json = await response.json();
+  return mapToVinObject(json);
 }
 
-async function listVins() {
+async function listVins(): Promise<Array<Vin>> {
   const url = `${API_URL}/list`;
-  const response = await fetch(url, { method: 'GET', 'content-type': 'application/json' });
+  const response = await fetch(url, { method: 'GET' });
   if (!response.ok) {
     throw new Error(`VIN lookup api returned with a ${response.statusText}.`);
   }
-  return await response.json();
+  
+  const json = await response.json();
+  return json.vins.map(mapToVinObject);
 }
 
-async function exportVins(export_format = 'csv') {
+async function exportVins(export_format: string = 'csv'): Promise<void> {
   const url = `${API_URL}/export?export_format=${export_format}`;
   const response = await fetch(url, { method: 'GET' });
   if (!response.ok) {
@@ -41,9 +47,9 @@ async function exportVins(export_format = 'csv') {
   URL.revokeObjectURL(url);
 }
 
-function mapToVinObject(vinJson) {
+function mapToVinObject(vinJson: { [key: string]: string }): Vin {
   return {
-    vin: vinJson.vin,
+    vinNumber: vinJson.vin,
     make: vinJson.make,
     model: vinJson.model,
     modelYear: vinJson.model_year,
@@ -53,42 +59,46 @@ function mapToVinObject(vinJson) {
 }
 
 export default function App() {
-  const [cachedVins, setCachedVins] = useState(new Set());
-  const [vins, setVins] = useState([]);
+  const [cachedVins, setCachedVins] = useState(new Set<string>());
+  const [vins, setVins] = useState<Array<Vin>>([]);
 
-  function handleSearchClicked(vinNumber) {
+  async function handleSearchClicked(vinNumber: string): Promise<void> {
     if (cachedVins.has(vinNumber)) {
       return;
     }
 
-    lookupVin(vinNumber)
-      .then(vinJson => {
-        const vinsCopy = vins.slice();
-        vinsCopy.push(mapToVinObject(vinJson));
-        setVins(vinsCopy);
-        
-        const cachedVinsCopy = new Set(cachedVins);
-        cachedVinsCopy.add(vinJson.vin);
-        setCachedVins(cachedVinsCopy);
-      })
-      .catch(error => alert(error));
+    try {
+      const vin = await lookupVin(vinNumber);
+      const vinsCopy = vins.slice();
+      vinsCopy.push(vin);
+      setVins(vinsCopy);
+
+      const cachedVinsCopy = new Set(cachedVins);
+      cachedVinsCopy.add(vin.vinNumber);
+      setCachedVins(cachedVinsCopy);
+    } catch (error) {
+      alert(error);
+    }
   }
 
-  function handleExportClicked(exportFormat) {
-    exportVins(exportFormat)
-      .catch(error => alert(`Failed to export vins: ${error}.`));
+  async function handleExportClicked(exportFormat: string): Promise<void> {
+    try {
+      await exportVins(exportFormat);
+    } catch (error) {
+      alert(`Failed to export vins: ${error}.`)
+    }
   }
 
   // Initially load the vins
   useEffect(() => {
     listVins()
-      .then(vinsJson => {
+      .then(vinsFromApi => {
         const vinsCopy = vins.slice();
         const cachedVinsCopy = new Set(cachedVins);
 
-        for (const vinJson of vinsJson.vins) {
-          vinsCopy.push(mapToVinObject(vinJson));
-          cachedVinsCopy.add(vinJson.vin);
+        for (const vin of vinsFromApi) {
+          vinsCopy.push(vin);
+          cachedVinsCopy.add(vin.vinNumber);
         }
 
         setVins(vinsCopy);
