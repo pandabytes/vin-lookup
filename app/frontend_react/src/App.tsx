@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import Header from './Components/Header';
 import SearchVin from './Components/SearchVin';
-import ExportVins from './Components/ExportVins';
+import ExportVins, { ExportFormat } from './Components/ExportVins';
 import VinsTable from './Components/VinsTable';
 
 import { Vin } from './types';
@@ -30,8 +30,8 @@ async function listVins(): Promise<Array<Vin>> {
   return json.vins.map(mapToVinObject);
 }
 
-async function exportVins(export_format: string = 'csv'): Promise<void> {
-  const url = `${API_URL}/export?export_format=${export_format}`;
+async function exportVins(exportFormat: ExportFormat = ExportFormat.CSV): Promise<void> {
+  const url = `${API_URL}/export?export_format=${exportFormat}`;
   const response = await fetch(url, { method: 'GET' });
   if (!response.ok) {
     throw new Error(`VIN lookup api returned with a ${response.statusText}.`);
@@ -41,7 +41,7 @@ async function exportVins(export_format: string = 'csv'): Promise<void> {
   const urlBlob = URL.createObjectURL(blob);
   const anchorElement = document.createElement('a');
   anchorElement.href = urlBlob;
-  anchorElement.download = `vins.${export_format}` ?? '';
+  anchorElement.download = `vins.${exportFormat}` ?? '';
   anchorElement.click();
   anchorElement.remove();
   URL.revokeObjectURL(url);
@@ -81,7 +81,7 @@ export default function App() {
     }
   }
 
-  async function handleExportClicked(exportFormat: string): Promise<void> {
+  async function handleExportClicked(exportFormat: ExportFormat): Promise<void> {
     try {
       await exportVins(exportFormat);
     } catch (error) {

@@ -1,7 +1,12 @@
 import { FormEvent } from "react";
 
+export enum ExportFormat {
+  CSV = 'csv',
+  PARQUET = 'parquet',
+};
+
 export type ExportVinsArgs = {
-  onExportClicked?: (arg: string) => void;
+  onExportClicked?: (arg: ExportFormat) => void;
 };
 
 export default function ExportVins({ onExportClicked }: ExportVinsArgs) {
@@ -12,8 +17,21 @@ export default function ExportVins({ onExportClicked }: ExportVinsArgs) {
 
     if (onExportClicked) {
       const formData = new FormData(event.target as HTMLFormElement);
-      const exportFormat = formData.get(exportFormatName)!.toString()
-      onExportClicked(exportFormat);
+      const exportFormat: string = formData.get(exportFormatName)!.toString();
+
+      // Return a JSON object whose key is the string enum value
+      // and the value is the string enum object
+      const allExportFormats = Object.fromEntries(
+        Object
+          .values(ExportFormat)
+          .map(expFormat => [expFormat.toString(), expFormat])
+      );
+
+      if (Object.keys(allExportFormats).includes(exportFormat)) {
+        onExportClicked(allExportFormats[exportFormat])
+      } else {
+        throw new Error(`Invalid export format \"${exportFormat}\".`);
+      }
     }
   }
 
@@ -22,8 +40,8 @@ export default function ExportVins({ onExportClicked }: ExportVinsArgs) {
       <form className="vin-lookup-form" onSubmit={submitForm}>
         <label>Select export format:</label>
         <select name={exportFormatName}>
-          <option value="csv">CSV</option>
-          <option value="parquet">Parquet</option>
+          <option value={ExportFormat.CSV}>CSV</option>
+          <option value={ExportFormat.PARQUET}>Parquet</option>
         </select>
 
         <br />
