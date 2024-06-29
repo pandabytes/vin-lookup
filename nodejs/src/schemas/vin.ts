@@ -5,7 +5,7 @@ import { z } from 'zod';
 
 export type Vin = z.infer<typeof VinSchema>;
 
-export function validate(vin: Vin) {
+export function validateVin(vin: Vin) {
   return VinSchema.parse(vin);
 }
 
