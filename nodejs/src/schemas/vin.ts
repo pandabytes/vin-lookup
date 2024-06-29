@@ -14,7 +14,7 @@ export function isVinCorrectFormat(vinNumber: string): boolean {
 }
 
 const VinSchema = z.object({
-  vin: z.string({})
+  vinNumber: z.string({})
     .transform((value, _) => value.trim().toUpperCase())
     .refine(isVinCorrectFormat,
             value => ({ message: `"VIN ${value}" must be a 17 alphanumeric characters string.`})),
@@ -30,7 +30,7 @@ const VinSchema = z.object({
   bodyClass: z.string()
     .transform((value, _) => value.trim())
     .refine(isNotEmpty, getEmptyStringMessage),
-  photoUrl: z.string().url().optional(),
+  photoUrl: z.string().url().optional().nullable(),
 });
 
 function isAlphaNumeric(str: string): boolean {

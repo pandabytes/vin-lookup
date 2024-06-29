@@ -161,6 +161,8 @@ cython_debug/
 
 # Custom
 .temp/
+*.db
+*.db-journal
 
 # JS/TS
 node_modules/

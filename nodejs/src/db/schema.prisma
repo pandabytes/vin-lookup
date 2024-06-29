@@ -14,10 +14,10 @@ datasource db {
 
 model Vin {
   id Int @id @default(autoincrement())
-  vin String @unique // Every @unique column gets an index assigned to it
+  vinNumber String @unique // Every @unique column gets an index assigned to it
   make String
   model String
   modelYear String
   bodyClass String
-  photoUrl String
+  photoUrl String?
 }
