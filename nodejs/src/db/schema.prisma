@@ -1,6 +1,8 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
+// https://www.prisma.io/docs/getting-started/quickstart
+
 generator client {
   provider = "prisma-client-js"
 }
@@ -15,7 +17,7 @@ model Vin {
   vin String @unique // Every @unique column gets an index assigned to it
   make String
   model String
-  model_year String
-  body_class String
-  photo_url String
+  modelYear String
+  bodyClass String
+  photoUrl String
 }
