@@ -9,14 +9,15 @@ export class CarImageryApiError extends Error {
 }
 
 export async function findCarPhotoUrl(make: string, model: string, modelYear: string): Promise<string | null> {
-  [make, model, modelYear] = make.trim(), model.trim(), modelYear.trim();
+  make = make.trim();
+  model = model.trim();
+  modelYear = modelYear.trim();
 
   if (make === '' || model === '' || modelYear === '') {
     throw new InvalidArgumentError('All arguments must not be empty string and not contain only whitespaces.');
   }
 
   const searchTerm = `${make} ${model} ${modelYear}`;
-
   const url = `https://www.carimagery.com/api.asmx/GetImageUrl?searchTerm=${searchTerm}`;
   const response = await fetch(url, { 
     method: 'GET',

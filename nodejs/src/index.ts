@@ -5,7 +5,7 @@ import { default as lookupRoutes } from './routes/lookup';
 import { default as removeRoutes } from './routes/remove-vin';
 import prismaClient from './db/prisma-client';
 
-const port = 3001;
+const port = 8000;
 const app: Application = express();
 app.use(cors()); // https://en.wikipedia.org/wiki/Cross-origin_resource_sharing
 app.use(express.json()); // JSON body parser middleware
