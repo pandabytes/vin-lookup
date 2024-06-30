@@ -28,6 +28,11 @@ export async function findVin(prismaClient: PrismaClient, vinNumber: string): Pr
   return mapToVinSchema(vinEntity);
 }
 
+export async function removeVin(prismaClient: PrismaClient, vinNumber: string): Promise<boolean> {
+  const deletedVins = await prismaClient.vin.deleteMany({ where: { vinNumber: vinNumber }});
+  return deletedVins.count > 0;
+}
+
 function mapToVinSchema(vinEntity: VinEntity): VinSchema {
   const vinSchema: VinSchema = {
     vinNumber: vinEntity.vinNumber,
