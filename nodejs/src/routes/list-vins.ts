@@ -1,4 +1,4 @@
-import express, { Application, Request, Response } from 'express';
+import express from 'express';
 import { getAllvins } from '../db/vin-queries';
 import prismaClient from '../db/prisma-client';
 

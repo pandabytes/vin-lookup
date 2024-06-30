@@ -30,7 +30,6 @@ export async function findVin(vinNumber: string): Promise<Vin | null> {
       bodyClass: payload['BodyClass'],
     });
   } catch (error) {
-    console.error(error);
     return null;
   }
 }
